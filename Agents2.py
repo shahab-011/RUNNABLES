@@ -97,66 +97,22 @@ model = ChatGroq(
     temperature=0
 )
 
+agent = create_agent(
+    model,
+    tools = [get_weather, get_news],
+    systems_prompt = "You are a helpful city assistant."
+)
 
-
-# LLM selects which tool to call, so creating disctionary here
-
-tools  = {
-    "get_weather" : get_weather,
-    "get_news" : get_news
-}
-
-
-# NOW BINDING TOOLS
-model_with_tools = model.bin.bind_tools([
-    get_weather,
-    get_news
-])
-
-
-# NOW CREATING AGENT LOOP - V.IMP
-messages = []
-
-print("City Intelligence System")
-print("Type 0 to exit")
+print("City Agent | Type 0 to exit")
 
 while True:
     user_input = input("You : ")
     if user_input == 0:
-        break
-    messages.append(HumanMessage(content = user_input))
+        result = agent.invoke({
+            "messages": [{"role": "user", "content": user_input}]
+        })
 
-    while True:
-        result = model_with_tools.invoke(messages)
-        messages.append(result) 
+        print("Bot: ", result['messages'][-1].content)
 
-        #if tool is required
-
-        if result.tool_calls:
-            for tool_call in result.toolcalls:
-                toolname = tool_call['name']
-
-                # human in the loop
-                cofirm = input("Agents wnats to call {tool_name} Approve (yes/no)")
-                if confirm.lower() == "no":
-                    print("Tool call denied and i cannot get the latest information")
-                    break
-
-                # execute tool 
-                tool_result = tools[toolname].invoke(tool_call)
-
-                messages.append(ToolMessage(
-                    content = tool_result
-                    tool_call_id = tool_call['id']
-                ))
-            continue
-
-
-        else:
-            print("\n Final Answer: \n")
-            print(result.content)
-            print("\n" + "="*50  "\n")
-            break
-                 
 
 
